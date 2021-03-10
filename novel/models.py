@@ -48,7 +48,7 @@ class Chapter(models.Model):
     # created_at, updated_at, num
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    chapter_number = models.IntegerField(default=0)
+    chapter_number = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return self.title

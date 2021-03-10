@@ -8,5 +8,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         crawler.get_url_from_main_page("href")
-        # crawler.chapter_title_filter()
+        # crawler.craw_01("href")
+        # crawler.get_url_from_main_page_01()
         self.stdout.write("done crawling")
