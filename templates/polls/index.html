@@ -1,0 +1,13 @@
+<h3>Top 10 new update novel</h3>
+{% if novel_list %}
+<ul>
+    {% for novel in novel_list %}
+    <form action="/novels/{{ novel.slug }}">
+        <input type="hidden" id="title" name="manga_title" value="{{ novel.title }}"><br>
+        <button type="submit">{{ novel.title }}</button>
+    </form>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No polls are available.</p>
+{% endif %}
