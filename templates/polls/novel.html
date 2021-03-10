@@ -1,0 +1,14 @@
+{% if chapter_list %}
+<h3>Chapter list</h3>
+{% for chapter in chapter_list %}
+<div class="" style="margin-left: 30px; margin-bottom:-20px;margin-top: 0px;">
+    <form action="/novel/{{ chapter.title }}">
+        <input type="hidden" id="title" name="title" value="{{ chapter.title }}"><br>
+        <input type="hidden" id="title" name="manga_title" value="{{ manga_title.title }}"><br>
+        <button type="submit">{{ chapter.title }}</button>
+    </form>
+</div>
+{% endfor %}
+{% else %}
+<p>No polls are available.</p>
+{% endif %}
