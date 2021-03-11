@@ -90,12 +90,12 @@ def craw(href):
         if chapter_title:
             chapter_list = Chapter.objects.filter(novel=novel)
             chapter = Chapter.objects.filter(
-                title=chapter_title_filter(chapter_title.text), novel=novel).first()
+                title=chapter_title_filter(chapter_title.text, 2), novel=novel).first()
             if not chapter:
                 chapter_number = int(
                     re.search(r'\d+', chapter_title.text).group())
                 chapter = Chapter.objects.create(
-                    title=chapter_title_filter(chapter_title.text), novel=novel, chapter_number=chapter_number)
+                    title=chapter_title_filter(chapter_title.text,2), novel=novel, chapter_number=chapter_number)
             print("chapter title: ", chapter.title)
             craw_chapter(novel_source, chapter)
         count += 1
@@ -121,6 +121,8 @@ def get_url_from_main_page(href):
     print("2: https://nuhiep.com")
     print("3: https://vtruyen.com")
     print("4: https://wikidich.com")
+    print("5: https://bachngocsach.com")
+    print("6: https://truyen.tangthuvien.vn")
     val = int(input("Select value of your chose!: "))
     href = "123456877"
     print()
@@ -136,6 +138,12 @@ def get_url_from_main_page(href):
     elif val == 3:
         href = "https://vtruyen.com"
         main_function(href)
+    elif val == 5:
+        href = "https://bachngocsach.com"
+        get_novel_link_from_main_page(href)
+    elif val == 6:
+        href = "https://truyen.tangthuvien.vn"
+        get_novel_link_from_main_page_01(href)
 
 
 def main_function(href):
@@ -150,10 +158,12 @@ def main_function(href):
             craw(href)
 
 
-def chapter_title_filter(title):
+def chapter_title_filter(title, number):
     arr = title.split()
-    arr.pop(0)
-    arr.pop(0)
+    count = 1
+    while count <= number:
+        arr.pop(0)
+        count +=1
     listToStr = ' '.join(map(str, arr))
     return listToStr
 
@@ -260,3 +270,200 @@ def get_url_from_main_page_01():
         for n in novel_links:
             novel_source = href + n.get('href')
             craw_01(novel_source)
+
+
+def get_novel_link_from_main_page(href):
+    print(href)
+    page = requests.get(href)
+    soup = BeautifulSoup(page.content, 'html.parser')
+    novel_links = soup.find_all("a", class_="recent-anhbia-a")
+    if novel_links:
+        print("got those link")
+    for n in novel_links:
+        href = n.get('href')
+        # print(href)
+        craw_02(href)
+
+
+def craw_02(href):
+    url = 'https://bachngocsach.com'
+    # href = 'https://bachngocsach.com/reader/lam'
+    page = requests.get(url + href)
+    soup = BeautifulSoup(page.content, 'html.parser')
+    description = soup.find(
+        'div', id="gioithieu")
+    categories = soup.find_all(
+        'div', id="theloai")
+    title = soup.find(
+        'h1', id="truyen-title")
+
+    if description:
+        description = description.text
+    else:
+        description = ""
+    slug = href.replace('https://bachngocsach.com', '')
+    source = url + slug
+    if title:
+        if not Novel.objects.filter(title=title.text).first():
+            Novel.objects.create(title=title.text,
+                                 description=description, slug=slug, source=source, public=True)
+
+    if categories:
+        for category in categories:
+            children = category.findChildren("a", recursive=True)
+            for c in children:
+                if not Category.objects.filter(name=c.text):
+                    Category.objects.create(name=c.text)
+                novel = Novel.objects.filter(title=title.text).first()
+                category = Category.objects.filter(name=c.text).first()
+                novel.category.add(category)
+    if title:
+        novel = Novel.objects.filter(title=title.text).first()
+        table_of_contents = source + "/" + "muc-luc"
+        # print("current link " + table_of_contents)
+        get_chapter(table_of_contents, novel, url)
+
+
+def get_chapter(href, novel, url):
+    page = requests.get(href)
+    soup = BeautifulSoup(page.content, 'html.parser')
+    chapter_links = soup.find_all("div", class_="mucluc-chuong")
+    if chapter_links:
+        print("got some links")
+        for c in chapter_links:
+            children = c.findChildren("a", recursive=True)
+            for c in children:
+                href = c.get('href')
+                href = url + "/" + href
+                craw_chapter_03(href, novel)
+
+
+def craw_chapter_03(href, novel):
+    page = requests.get(href)
+    soup = BeautifulSoup(page.content, 'html.parser')
+    title = soup.find("h1", id="chuong-title")
+    content = soup.find("div", id="noi-dung")
+    if title:
+        print("chapter_title: ", title.text)
+        try:
+            chapter_number = int(
+                re.search(r'\d+', title.text).group())
+        except:
+            chapter_number = None
+        print(chapter_number)
+        title = chapter_title_filter(title.text, 2)
+        if not Chapter.objects.filter(title=title, novel=novel):
+            if content:
+                Chapter.objects.create(
+                    title=title, content=content.text, novel=novel, chapter_number=chapter_number)
+
+
+def get_novel_link_from_main_page_01(href):
+    print(href)
+    page = requests.get(href)
+    soup = BeautifulSoup(page.content, 'html.parser')
+    novel_links = soup.find_all("a", class_="name")
+    novel_links_01 = soup.find_all("h3")
+    if novel_links:
+        print("got link 1")
+        for n in novel_links:
+            href = n.get('href')
+            # print(href)
+            # craw_03(href)
+        print("=================================")
+    if novel_links_01:
+        print("got link 2")
+        for n in novel_links_01:
+            children = n.findChildren("a", recursive=False)
+            for c in children:
+                href = c.get('href')
+                if "javascript" in href:
+                    continue
+                # print(href)
+                craw_03(href)
+        print("=================================")
+
+
+def craw_03(href):
+    url = 'https://truyen.tangthuvien.vn'
+    # href = 'https://bachngocsach.com/reader/lam'
+    page = requests.get(href)
+    soup = BeautifulSoup(page.content, 'html.parser')
+    category = soup.find("a", class_="red")
+    status = soup.find("span", class_="blue")
+    number_of_chapter = soup.find("a", id="j-bookCatalogPage")
+    description = soup.find(
+        'div', class_="book-intro")
+    categories = soup.find_all(
+        'div', id="theloai")
+    title = soup.find(
+        'h1')
+    count = 0
+    if status:
+        if status.text == "Đã hoàn thành":
+            status = 2
+        else:
+            status = 1
+    # if title:
+    #     print(title.text)
+
+    if description:
+        description = description.text
+    else:
+        description = ""
+    slug = href.replace('https://truyen.tangthuvien.vn', '')
+    source = url + slug
+
+    # print(slug)
+    if title:
+        if not Novel.objects.filter(title=title.text).first():
+            Novel.objects.create(title=title.text,
+                                 description=description, slug=slug, source=source, public=True)
+
+    if categories:
+        for category in categories:
+            children = category.findChildren("a", recursive=True)
+            for c in children:
+                if not Category.objects.filter(name=c.text):
+                    Category.objects.create(name=c.text)
+                novel = Novel.objects.filter(title=title.text).first()
+                category = Category.objects.filter(name=c.text).first()
+                novel.category.add(category)
+    if title:
+        print("New novel: ", title.text)
+        novel = Novel.objects.filter(title=title.text).first()
+        if number_of_chapter:
+            try:
+                number_of_chapter = re.search(
+                    r'\d+', number_of_chapter.text).group()
+                print("Number of chapter: ", number_of_chapter)
+                novel.number_of_chapter = number_of_chapter
+                novel.save()
+                print(href)
+            except:
+                number_of_chapter = 0
+            index = 1
+            while(index <= int(number_of_chapter)):
+                chapter_source = href + "/" + "chuong-" + str(index)
+                # print("chapter-source ", chapter_source)
+                get_chapter_03(chapter_source, novel, index)
+                index += 1
+
+
+def get_chapter_03(href, novel, chapter_number):
+    page = requests.get(href)
+    soup = BeautifulSoup(page.content, 'html.parser')
+
+    chapter_title = soup.find("h2")
+    content_list = soup.find_all("div", class_="box-chap")
+    content = ""
+    if content_list:
+        for c in content_list:
+            content += c.text
+    if chapter_title:
+        print(chapter_title.text)
+        chapter_title = chapter_title_filter(chapter_title.text, 3)
+        if not Chapter.objects.filter(title=chapter_title, novel=novel):
+            if content:
+                Chapter.objects.create(
+                    title=chapter_title, content=content, novel=novel, chapter_number=chapter_number)
