@@ -47,7 +47,7 @@ def craw(href):
         print(title.text)
 
         url += slug
-    print(url)
+    print(href)
     if title:
         if not Novel.objects.filter(title=title.text).first():
             if access_bar:
@@ -63,7 +63,7 @@ def craw(href):
                     count += 1
             print("new novel: ", title.text)
             Novel.objects.create(title=title.text, status=status, description=description_scrap.text, number_of_chapter=number_of_chapter,
-                                 view_count=view_count, slug=slug, source=url, public=True)
+                                 view_count=view_count, slug=slug, source=href, public=True)
     for c in category:
         if c.text:
             if not Category.objects.filter(name=c.text):
@@ -83,6 +83,7 @@ def craw(href):
     count = 1
     while(count <= 10):
         novel_source = novel.source + "/chuong-" + str(count)
+        print(novel_source)
         page = requests.get(novel_source)
         soup = BeautifulSoup(page.content, 'html.parser')
         chapter_title = soup.find(class_="nh-read__title")
@@ -95,9 +96,12 @@ def craw(href):
                     re.search(r'\d+', chapter_title.text).group())
                 chapter = Chapter.objects.create(
                     title=chapter_title_filter(chapter_title.text), novel=novel, chapter_number=chapter_number)
-            print(chapter.title)
+            print("chapter title: ", chapter.title)
             craw_chapter(novel_source, chapter)
         count += 1
+        print("cannot find chapter_title")
+
+    print("chapter-count: ", novel.number_of_chapter)
     print("Craw 10 chapters - done")
     print("--------------------------------------")
 
@@ -135,6 +139,7 @@ def get_url_from_main_page(href):
 
 
 def main_function(href):
+    print(href)
     page = requests.get(href)
     soup = BeautifulSoup(page.content, 'html.parser')
     title_list = soup.find_all(class_="fz-body m-0 text-overflow-1-lines")
@@ -172,7 +177,6 @@ def craw_01(href):
 
     chapter_link = soup.find_all('li', class_="chapter-name")
     for i in range(len(access_bar)):
-        print(access_bar[i].text)
         if i == 2:
             status = access_bar[i].text
             if 'Còn tiếp' in status:
@@ -212,7 +216,11 @@ def craw_01(href):
                     chapter_source = main_url + href
                     craw_chapter_01(chapter_source, novel, count)
                     count = count + 1
-        print("Craw 10 chapters - done")
+        count_ = Chapter.objects.filter(novel=novel).count()
+        print("total chapter craw: ", count_)
+        novel.number_of_chapter = count_
+        novel.save()
+        print("Craw chapters - done")
         print("--------------------------------------")
 
 
@@ -251,7 +259,4 @@ def get_url_from_main_page_01():
     if novel_links:
         for n in novel_links:
             novel_source = href + n.get('href')
-            print(novel_source)
             craw_01(novel_source)
-    if not novel_links:
-        print("hopeless")
