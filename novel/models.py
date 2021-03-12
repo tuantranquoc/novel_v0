@@ -26,7 +26,6 @@ class Novel(models.Model):
     status = models.IntegerField(choices=choice.STATUS_CHOICES, default=1)
     category = models.ManyToManyField(
         Category, blank=True)
-    view_count = models.CharField(max_length=255, blank=True, null=True)
     date_created = models.DateTimeField(default=timezone.now)
     date_updated = models.DateTimeField(auto_now_add=True)
     number_of_chapter = models.IntegerField(default=0)

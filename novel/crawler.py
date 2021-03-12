@@ -39,15 +39,13 @@ def craw(href):
     access_bar = soup.find_all(class_="font-weight-semibold h4 mb-1")
     number_of_chapter = 0
     chapter_per_week = 0
-    view_count = "0k"
     bookmark_count = 0
     count = 0
     if title:
         slug = slugify(title.text)
-        print(title.text)
+        print("new novel: ", title.text)
 
         url += slug
-    print(href)
     if title:
         if not Novel.objects.filter(title=title.text).first():
             if access_bar:
@@ -61,9 +59,9 @@ def craw(href):
                     elif count == 3:
                         bookmark_count = a.text
                     count += 1
-            print("new novel: ", title.text)
+
             Novel.objects.create(title=title.text, status=status, description=description_scrap.text, number_of_chapter=number_of_chapter,
-                                 view_count=view_count, slug=slug, source=href, public=True)
+                                 slug=slug, source=href, public=True)
     for c in category:
         if c.text:
             if not Category.objects.filter(name=c.text):
@@ -81,9 +79,8 @@ def craw(href):
 
     novels = Novel.objects.filter(title=title.text)
     count = 1
-    while(count <= 10):
+    while(count <= novel.number_of_chapter):
         novel_source = novel.source + "/chuong-" + str(count)
-        print(novel_source)
         page = requests.get(novel_source)
         soup = BeautifulSoup(page.content, 'html.parser')
         chapter_title = soup.find(class_="nh-read__title")
@@ -95,14 +92,13 @@ def craw(href):
                 chapter_number = int(
                     re.search(r'\d+', chapter_title.text).group())
                 chapter = Chapter.objects.create(
-                    title=chapter_title_filter(chapter_title.text,2), novel=novel, chapter_number=chapter_number)
+                    title=chapter_title_filter(chapter_title.text, 2), novel=novel, chapter_number=chapter_number)
             print("chapter title: ", chapter.title)
             craw_chapter(novel_source, chapter)
         count += 1
-        print("cannot find chapter_title")
 
     print("chapter-count: ", novel.number_of_chapter)
-    print("Craw 10 chapters - done")
+    print("Craw novel ", novel.title, " Done")
     print("--------------------------------------")
 
 
@@ -130,7 +126,6 @@ def get_url_from_main_page(href):
         get_url_from_main_page_01()
     elif val == 1:
         href = "https://metruyenchu.com"
-        print(href)
         main_function(href)
     elif val == 2:
         href = "https://nuhiep.com"
@@ -150,11 +145,19 @@ def main_function(href):
     print(href)
     page = requests.get(href)
     soup = BeautifulSoup(page.content, 'html.parser')
-    title_list = soup.find_all(class_="fz-body m-0 text-overflow-1-lines")
-    for title in title_list:
-        children = title.findChildren("a", recursive=True)
-        for c in children:
-            href = c.get('href')
+    novel_source = soup.find_all(class_="fz-body m-0 text-overflow-1-lines")
+    novel_source_01 = soup.find_all("a", class_="d-block")
+    if novel_source:
+        for n in novel_source:
+            children = n.findChildren("a", recursive=True)
+            for c in children:
+                href = c.get('href')
+                craw(href)
+    if novel_source_01:
+        for n in novel_source_01:
+            href = n.get('href')
+            if "pub.truyen.onl" in href:
+                continue
             craw(href)
 
 
@@ -163,7 +166,7 @@ def chapter_title_filter(title, number):
     count = 1
     while count <= number:
         arr.pop(0)
-        count +=1
+        count += 1
     listToStr = ' '.join(map(str, arr))
     return listToStr
 
@@ -261,7 +264,7 @@ def get_url_from_main_page_01():
     print(href)
     driver.get(href)
     respData = driver.page_source
-    # driver.quit()
+    driver.quit()
     # page = requests.get(href)
     soup = BeautifulSoup(respData, 'html.parser')
     novel_links = soup.find_all(
@@ -277,8 +280,6 @@ def get_novel_link_from_main_page(href):
     page = requests.get(href)
     soup = BeautifulSoup(page.content, 'html.parser')
     novel_links = soup.find_all("a", class_="recent-anhbia-a")
-    if novel_links:
-        print("got those link")
     for n in novel_links:
         href = n.get('href')
         # print(href)
@@ -329,7 +330,6 @@ def get_chapter(href, novel, url):
     soup = BeautifulSoup(page.content, 'html.parser')
     chapter_links = soup.find_all("div", class_="mucluc-chuong")
     if chapter_links:
-        print("got some links")
         for c in chapter_links:
             children = c.findChildren("a", recursive=True)
             for c in children:
@@ -350,7 +350,6 @@ def craw_chapter_03(href, novel):
                 re.search(r'\d+', title.text).group())
         except:
             chapter_number = None
-        print(chapter_number)
         title = chapter_title_filter(title.text, 2)
         if not Chapter.objects.filter(title=title, novel=novel):
             if content:
@@ -365,14 +364,12 @@ def get_novel_link_from_main_page_01(href):
     novel_links = soup.find_all("a", class_="name")
     novel_links_01 = soup.find_all("h3")
     if novel_links:
-        print("got link 1")
         for n in novel_links:
             href = n.get('href')
             # print(href)
-            # craw_03(href)
+            craw_03(href)
         print("=================================")
     if novel_links_01:
-        print("got link 2")
         for n in novel_links_01:
             children = n.findChildren("a", recursive=False)
             for c in children:
