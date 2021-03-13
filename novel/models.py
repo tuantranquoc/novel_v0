@@ -51,7 +51,11 @@ class Chapter(models.Model):
 
     def __str__(self):
         return self.title
-
+    
+class Driver(models.Model):
+    path = models.CharField(max_length=255, blank=True, null=True)
+        
+        
 # class View(models.Model):
 #     user = models.ForeignKey(
 #         User, on_delete=models.CASCADE, blank=True, null=True)
