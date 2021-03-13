@@ -1,4 +1,4 @@
-from .models import Novel, Category, Chapter
+from .models import Novel, Category, Chapter, Driver
 from bs4 import BeautifulSoup
 import requests
 from slugify import slugify
@@ -11,11 +11,13 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 import random
+from tkinter import Tk     # from tkinter import Tk for Python 3.x
+from tkinter.filedialog import askopenfilename
+
 PATH = 'C:\Program Files (x86)\chromedriver.exe'
 
 
 def craw(href):
-
     url = 'https://metruyenchu.com/truyen/'
     # href = 'https://metruyenchu.com/truyen/vo-dich-chi-manh-nhat-than-cap-lua-chon'
     page = requests.get(href)
@@ -113,6 +115,7 @@ def craw_chapter(href, chapter):
 
 def get_url_from_main_page(href):
     # cover-wrapper z-depth-1 hoverable
+    print("0: Select to change driver path")
     print("1: https://metruyenchu.com")
     print("2: https://nuhiep.com")
     print("3: https://vtruyen.com")
@@ -121,7 +124,18 @@ def get_url_from_main_page(href):
     print("6: https://truyen.tangthuvien.vn")
     val = int(input("Select value of your chose!: "))
     href = "123456877"
-    print()
+    if not Driver.objects.first():
+        Driver.objects.create(path=PATH)
+    if val == 0:
+        driver_path = Driver.objects.first()
+        if driver_path:
+            print("current path: ", driver_path.path)
+        path = input(
+            "Copy and parse your absolute path to chrome driver here! ")
+        print()
+        if driver_path:
+            driver_path.path = path
+            driver_path.save()
     if val == 4:
         get_url_from_main_page_01()
     elif val == 1:
@@ -172,7 +186,10 @@ def chapter_title_filter(title, number):
 
 
 def craw_01(href):
-    driver = webdriver.Chrome(PATH)
+    path = PATH
+    if Driver.objects.first():
+        path = Driver.objects.first().path
+    driver = webdriver.Chrome(path)
     url = 'https://wikidich.com/truyen/'
     main_url = 'https://wikidich.com'
     # href = 'https://wikidich.com/truyen/thinh-dinh-chi-nguoi-truong-tam-hanh-vi-YEfailS4CDHvEhMz'
@@ -254,13 +271,17 @@ def craw_chapter_01(href, novel, chapter_number):
         chapter = Chapter.objects.filter(
             title=c.text, novel=novel).first()
         if not chapter:
+            print("chapter title: ", title)
             chapter = Chapter.objects.create(
                 title=title, novel=novel, chapter_number=chapter_number, content=content.text)
 
 
 def get_url_from_main_page_01():
     href = "https://wikidich.com"
-    driver = webdriver.Chrome(PATH)
+    path = PATH
+    if Driver.objects.first():
+        path = Driver.objects.first().path
+    driver = webdriver.Chrome(path)
     print(href)
     driver.get(href)
     respData = driver.page_source

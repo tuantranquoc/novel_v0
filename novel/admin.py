@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User, Novel, Category, Chapter
+from .models import User, Novel, Category, Chapter, Driver
 from django_ace import AceWidget
 from django import forms
 
@@ -53,6 +53,14 @@ class CategoryAdmin(admin.ModelAdmin):
 
     class Meta:
         model = Category
+        
+
+class DriverAdmin(admin.ModelAdmin):
+    list_display = ('path', )
+    search_fields = ('path',)
+
+    class Meta:
+        model = Driver
 
 
 class ChapterAdmin(admin.ModelAdmin):
@@ -70,3 +78,4 @@ admin.site.register(Novel, NovelAdmin)
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(User, UserAdmin)
 admin.site.register(Chapter, ChapterAdmin)
+admin.site.register(Driver, DriverAdmin)
