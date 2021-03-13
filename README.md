@@ -45,7 +45,7 @@
 
 ### Create admin account
 
-> py ./ manage.py createsuperuser
+> py ./manage.py createsuperuser
 
 ### Start app
 
@@ -55,7 +55,8 @@
 
 > example: 'C:\Program Files (x86)\chromedriver.exe'
 
-### Run app again and select option 1 - 6 to craw novel
+### Run app again and select option 1 - 6 to craw novels from provided website
+### Note: <https://wikidich.com> use DOS detection  
 
 ### Run server and test data
 
